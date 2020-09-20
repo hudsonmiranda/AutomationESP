@@ -1,0 +1,11 @@
+.git/
+.pio/
+.settings/
+.vscode/
+include/
+temp/
+temp_lib/
+test/
+.cproject
+.project
+README.md
