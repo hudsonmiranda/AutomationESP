@@ -1,8 +1,9 @@
 /*
-    Dev: Hudson Miranda Sousa
-    30/08/2020
-    Update: 20/09/2020
-*/
+ * main.cpp
+ *
+ *  Created on: Aug 30, 2020
+ *      Author: hudsonm
+ */
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -113,7 +114,7 @@ void wr_menu();
 void readJoystick();
 void home();
 void localTime();
-void menu_op1(int &i);
+void menu_alojamento(int &i);
 
 void setup() {
   Serial.begin(115200);
@@ -222,7 +223,7 @@ void loop() {
     // ESP.restart();
   }
 //  home();
-  menu_op1(cursor);
+  menu_alojamento(cursor);
 //  Serial.printf("HOME\n- - - - - - - - - - - - - -\n");
 //  delay(500);
 //  if (key=='*'){
@@ -271,25 +272,7 @@ void select_menu(int index){
       Serial.printf("\n1→ Return to Menu.\n");
       return;
     case 1:
-      lcd.clear();
-      while (analogRead(eixoX)>1000){
-        lcd.setCursor(0,0);
-        lcd.print("|    IDADE LOTE    |");
-        lcd.setCursor(0,2); lcd.print("Idade:");
-        lcd.setCursor(7,2); lcd.print("00");
-        lcd.setCursor(7,3); lcd.print("|");
-        delay(500);
-        // if (analogRead(eixoX)>3000){
-        if(save=='#'){
-          lcd.clear();
-          lcd.setCursor(7,1);
-          lcd.print("|SAVE|");
-          Serial.printf("|SAVE|");
-          delay(5000);
-          lcd.clear(); 
-        }
-      }
-      Serial.printf("2→ Return to Menu.");
+      // menu_alojamento(cursor);
       return;
     case 2:
       lcd.clear();
