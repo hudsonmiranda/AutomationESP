@@ -4,27 +4,26 @@
  *  Created on: Aug 30, 2020
  *      Author: hudsonm
  */
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <LiquidCrystal_I2C.h>
-// #include <DHT.h>
-#include <DHTesp.h>
+#include <DHT.h>
+#include <Adafruit_Sensor.h>
+// #include <NTPClient.h>
 #include <Keypad.h>
 #include "time.h"
-// #include <NTPClient.h>
+// - - - - - - - - - - - - - - - - - - - - - //
+#include "DataHora.h"
+
 
 #define DHTPIN 4
-//#define DHTTYPE DHT11 //Define o tipo de sensor DHT
+#define DHTTYPE DHT11 //Define o tipo de sensor DHT
 #define switchJoystick 14//35
 #define eixoX 33
 #define eixoY 32
-
-struct tm timeinfo, data_alojamento, data_hoje;
-timer_t hoje, alojamento;
 
 // Char especial
 byte arrow[8] = {0x00, 0x04 ,0x06, 0x1f, 0x06, 0x04, 0x00};
@@ -35,7 +34,7 @@ byte hu[8]={B00100, B01110, B01110, B11111, B11111, B11101, B11101, B01110};
 // byte hu[]={0x04,0x0e,0x0e,0x1f,0x1f,0x1d,0x1d,0x0e};
 
 // Define sendor DHT
-DHTesp dht;
+DHT dht(DHTPIN,DHTTYPE);
 float t = 0;
 float h = 0;
 float hic = 0;
@@ -96,10 +95,12 @@ char data_aloj[] = {' ',
 
 int menu_num=0,
     indicator=0,
-	cursor,
-	dia_alojamento,
-	mes_alojamento,
-	ano_alojamento;
+	  cursor;
+
+//Define Data Alojamento
+DataHora Alojamento, Now;
+struct tm timeinfo, data_alojamento, data_hoje;
+timer_t hoje, alojamento;
 
 // size display LCD
 int lcdColumns = 20;
@@ -119,7 +120,7 @@ void menu_alojamento(int &i);
 void setup() {
   Serial.begin(115200);
   // dht.begin(); //Inicializa o sensor de temperatura
-  dht.setup(DHTPIN,DHTesp::DHT11);
+  dht.begin();
   pinMode(switchJoystick,INPUT_PULLUP); // Button Joystick
   //We create the data to be sent later using lcd.write
   
@@ -128,8 +129,8 @@ void setup() {
   lcd.createChar(1,ip);
   lcd.createChar(2,he);
   lcd.createChar(3,te);
-  // lcd.createChar(4,hu);
-  lcd.load_custom_character(4,hu);
+  lcd.createChar(4,hu);
+//  lcd.load_custom_character(4,hu);
 
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
@@ -198,16 +199,7 @@ void setup() {
     Serial.println("Failed to obtain time");
     return;
   }
-  void localTime();
-
-
-
-  data_alojamento.tm_year=ano_alojamento-1900;
-  data_alojamento.tm_mon=mes_alojamento-1;
-  data_alojamento.tm_mday=dia_alojamento;
-  alojamento=mktime(&data_alojamento);
-
-  Serial.println("");
+  localTime();
 
   // //disconnect WiFi as it's no longer needed
   // WiFi.disconnect(true);
@@ -222,10 +214,11 @@ void loop() {
     // WiFi.
     // ESP.restart();
   }
-//  home();
-  menu_alojamento(cursor);
+  home();
+//  menu_alojamento(cursor);
+
 //  Serial.printf("HOME\n- - - - - - - - - - - - - -\n");
-//  delay(500);
+  delay(500);
 //  if (key=='*'){
 //    wr_menu();
 //  }
@@ -272,7 +265,7 @@ void select_menu(int index){
       Serial.printf("\n1→ Return to Menu.\n");
       return;
     case 1:
-      // menu_alojamento(cursor);
+       menu_alojamento(cursor);
       return;
     case 2:
       lcd.clear();
@@ -432,6 +425,7 @@ void readJoystick(){
 
 void home(){ 
   lcd.home();
+
   // Print ESP Local IP Address
   lcd.setCursor(0,0); //lcd.print("IP:");
   lcd.write(1);
@@ -471,18 +465,18 @@ void home(){
 
   /** Comfort profile */
   // ComfortState cf;
-  TempAndHumidity values = dht.getTempAndHumidity();
+//  TempAndHumidity values = dht.getTempAndHumidity();
   // Reading temperature or humidity takes about 250 milliseconds!
-  // t = dht.readTemperature(); // Read temperature as Celsius (the default)
-  t = dht.getTemperature();
+   t = dht.readTemperature(); // Read temperature as Celsius (the default)
+//  t = dht.getTemperature();
   //float t = dht.readTemperature(true);
-  // h = dht.readHumidity(); // Sensor readings may also be up to 2 seconds 'old' 
-  h = dht.getHumidity();
+   h = dht.readHumidity(); // Sensor readings may also be up to 2 seconds 'old'
+//  h = dht.getHumidity();
   // (its a very slow sensor)
   
   // Compute heat index in Celsius (isFahreheit = false)
-  // hic = dht.computeHeatIndex(t, h, false);
-  hic = dht.computeHeatIndex(values.temperature,values.humidity,false);
+   hic = dht.computeHeatIndex(t, h, false);
+//  hic = dht.computeHeatIndex(values.temperature,values.humidity,false);
   // float cr = dht.getComfortRatio(cf,values.temperature,values.humidity);
 
   // Check if any reads failed and exit early (to try again).
@@ -539,94 +533,93 @@ void home(){
 
 void localTime(){
   // struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    return;
-  }
-  // Serial.println(&timeinfo);
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-  // Serial.print("Day of week: ");
-  // Serial.println(&timeinfo, "%A");
-  // Serial.print("Month: ");
-  // Serial.println(&timeinfo, "%B");
-  // Serial.print("Day of Month: ");
-  // Serial.println(&timeinfo, "%d");
-  // Serial.print("Year: ");
-  // Serial.println(&timeinfo, "%Y");
-  // Serial.print("Hour: ");
-  // Serial.println(&timeinfo, "%H");
-  // Serial.print("Hour (12 hour format): ");
-  // Serial.println(&timeinfo, "%I");
-  // Serial.print("Minute: ");
-  // Serial.println(&timeinfo, "%M");
-  // Serial.print("Second: ");
-  // Serial.println(&timeinfo, "%S");
 
-  // Serial.print("Abreviate: ");
-  // Serial.println(&timeinfo, "%d-%m-%Y");
+//	if(!getLocalTime(&timeinfo)){
+	if(!getLocalTime(&Now.getData())){
+		Serial.println("Failed to obtain time");
+		return;
+	}
+	Now.setDataT(Now.getData());
+	// Serial.println(&timeinfo);
+	Serial.println(&Now.getData(), "%A, %B %d %Y %H:%M:%S");
+	// Serial.print("Day of week: ");
+	// Serial.println(&timeinfo, "%A");
+	// Serial.print("Month: ");
+	// Serial.println(&timeinfo, "%B");
+	// Serial.print("Day of Month: ");
+	// Serial.println(&timeinfo, "%d");
+	// Serial.print("Year: ");
+	// Serial.println(&timeinfo, "%Y");
+	// Serial.print("Hour: ");
+	// Serial.println(&timeinfo, "%H");
+	// Serial.print("Hour (12 hour format): ");
+	// Serial.println(&timeinfo, "%I");
+	// Serial.print("Minute: ");
+	// Serial.println(&timeinfo, "%M");
+	// Serial.print("Second: ");
+	// Serial.println(&timeinfo, "%S");
 
-  // tm *data_hoje;//=localtime(&hoje);
-  data_hoje.tm_year=timeinfo.tm_year;
-  data_hoje.tm_mon=timeinfo.tm_mon;
-  data_hoje.tm_mday=timeinfo.tm_mday;
-  hoje=mktime(&data_hoje);
+	// Serial.print("Abreviate: ");
+	// Serial.println(&timeinfo, "%d-%m-%Y");
 
-  lcd.setCursor(0,3);   lcd.write(0);
-  lcd.setCursor(1,3);   lcd.print(&timeinfo, "%d/%m/%Y");
-  lcd.setCursor(12,3);  lcd.print(&timeinfo, "%R");
+	// tm *data_hoje;//=localtime(&hoje);
+//	data_hoje.tm_year=timeinfo.tm_year;
+//	data_hoje.tm_mon=timeinfo.tm_mon;
+//	data_hoje.tm_mday=timeinfo.tm_mday;
+//	hoje=mktime(&data_hoje);
 
-  double idade = difftime(hoje,alojamento) / (60 * 60 * 24);;
-  
-  Serial.println(&data_alojamento, "%A, %B %d %Y %H:%M:%S");
-  Serial.println(&data_hoje, "%A, %B %d %Y %H:%M:%S");
-  Serial.println((int)idade);
-  
-  // lcd.setCursor(18,3); lcd.print("0"); 
-  lcd.setCursor(18,3); lcd.printf("%02d",(int)idade);
-  
-  // Serial.println("Time variables");
-  // char timeHour[3];
-  // strftime(timeHour,3, "%H", &timeinfo);
-  // Serial.println(timeHour);
-  // char timeWeekDay[10];
-  // strftime(timeWeekDay,10, "%A", &timeinfo);
-  // Serial.println(timeWeekDay);
-  Serial.println();
+	lcd.setCursor(0,3);   lcd.write(0);
+	lcd.setCursor(1,3);   lcd.print(&Now.getData(), "%d/%m/%Y");
+	lcd.setCursor(12,3);  lcd.print(&Now.getData(), "%R");
+
+	double idade = difftime(Now.getDataT(),Alojamento.getDataT()) / (60 * 60 * 24);;
+
+	Serial.println(&Alojamento.getData(), "%A, %B %d %Y %H:%M:%S");
+	Serial.println(&Now.getData(), "%A, %B %d %Y %H:%M:%S");
+	Serial.println((int)idade);
+	Serial.println();
+
+	// lcd.setCursor(18,3); lcd.print("0");
+	lcd.setCursor(18,3); lcd.printf("%02d",(int)idade);
+
+	// Serial.println("Time variables");
+	// char timeHour[3];
+	// strftime(timeHour,3, "%H", &timeinfo);
+	// Serial.println(timeHour);
+	// char timeWeekDay[10];
+	// strftime(timeWeekDay,10, "%A", &timeinfo);
+	// Serial.println(timeWeekDay);
 }
 
-void menu_op1(int &i){
-//	lcd.clear(); lcd.home();
+void menu_alojamento(int &i){
 
 	char	save = keypad.getKey();
 	int		cursor[8]={9,10,12,13,15,16,17,18},
 			size_cursor = sizeof(cursor)/sizeof(cursor[0])-1;
 
-	if (i>size_cursor) {
-		i=0;
-	}
+//	if (i>size_cursor) i=0;
 
-	lcd.setCursor(0,0); lcd.print("|    ALOJAMENTO    |");
-	lcd.setCursor(0,2); lcd.print("Data:");//       /  /    ");
+	lcd.setCursor(0,0);  lcd.print("|    ALOJAMENTO    |");
+	lcd.setCursor(0,2);  lcd.print("Data:");
 	lcd.setCursor(11,2); lcd.print("/");
 	lcd.setCursor(14,2); lcd.print("/");
-//	for (int var = 0; var < size_cursor; var++) {
-//		lcd.setCursor(9,2); lcd.print(data_aloj[var]);
-//	}
-	lcd.setCursor(9,2); lcd.print(data_aloj[0]);
-	lcd.setCursor(10,2);lcd.print(data_aloj[1]);
-	lcd.setCursor(12,2);lcd.print(data_aloj[2]);
-	lcd.setCursor(13,2);lcd.print(data_aloj[3]);
-	lcd.setCursor(15,2);lcd.print(data_aloj[4]);
-	lcd.setCursor(16,2);lcd.print(data_aloj[5]);
-	lcd.setCursor(17,2);lcd.print(data_aloj[6]);
-	lcd.setCursor(18,2);lcd.print(data_aloj[7]);
 
-//	lcd.setCursor(10,2); lcd.print(data[i]);
+	for (int var = 0; var <=size_cursor; var++) {
+		lcd.setCursor(cursor[var],2); lcd.print(data_aloj[var]);
+	}
+	// lcd.setCursor(9,2); lcd.print(data_aloj[0]);
+	// lcd.setCursor(10,2);lcd.print(data_aloj[1]);
+	// lcd.setCursor(12,2);lcd.print(data_aloj[2]);
+	// lcd.setCursor(13,2);lcd.print(data_aloj[3]);
+	// lcd.setCursor(15,2);lcd.print(data_aloj[4]);
+	// lcd.setCursor(16,2);lcd.print(data_aloj[5]);
+	// lcd.setCursor(17,2);lcd.print(data_aloj[6]);
+	// lcd.setCursor(18,2);lcd.print(data_aloj[7]);
+
 	do {
 		save = keypad.getKey();
 		// Serial.printf("\ns_cursor: %d, i: %d, cursor: %d\n",size_cursor,i,cursor[i]);
 		lcd.setCursor(cursor[i],2);lcd.cursor();//blink();
-
 
 		if (save) {
 			Serial.println(save);
@@ -644,6 +637,7 @@ void menu_op1(int &i){
 					data_aloj[i]=save;
 					lcd.print(save);
 					i++;
+					if (i>size_cursor) i=0;
 //		        	Serial.printf("Tecla(char): %c, Tecla(int): %d, Data[%d] = %c\n",save,save,i,data_aloj[i]);
 				  break;
 				case '*':
@@ -653,20 +647,20 @@ void menu_op1(int &i){
 				  break;
 				case '#':
 					String str = data_aloj;
-					Serial.println(str);
-					dia_alojamento=str.substring(0,2).toInt();
-					mes_alojamento=str.substring(2,4).toInt();
-					ano_alojamento=str.substring(4,8).toInt();
-
-
+					Alojamento.setDia(str.substring(0,2).toInt());
+					Alojamento.setMes(str.substring(2,4).toInt());
+					Alojamento.setAno(str.substring(4,8).toInt());
+          
 					lcd.clear();
 					lcd.setCursor(7,1);
 					lcd.print("|SAVE|");
+					lcd.cursor_off();
 					Serial.printf("|SAVE|");
-					Serial.printf("\nDia: %d, Mes: %d, Ano: %d\n",dia_alojamento,mes_alojamento,ano_alojamento);
-					Serial.println("String: \n"+str);
+					Serial.printf("\nDia: %d, Mes: %d, Ano: %d\n",Alojamento.getDia(), Alojamento.getMes(), Alojamento.getAno());
+					// Serial.println("String: \n"+str);
 					delay(5000);
 					lcd.clear();
+					str.~String();
 				  break;
 			}
 		}
@@ -680,17 +674,17 @@ void menu_op1(int &i){
 	if(analogRead(eixoX)<1000){
 		if (i>0) {
 			i--;
-			menu_op1(i);
+			menu_alojamento(i);
 		} else {
-			menu_op1(i);
+			menu_alojamento(i);
 		}
 	}
 	if(analogRead(eixoX)>3000){
 		if (i<size_cursor) {
 			i++;
-			menu_op1(i);
+			menu_alojamento(i);
 		} else {
-			menu_op1(i);
+			menu_alojamento(i);
 		}
 	}
 }
