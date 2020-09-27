@@ -8,7 +8,11 @@
 #ifndef LIB_TEMPORIZADOR_TEMPORIZADOR_H_
 #define LIB_TEMPORIZADOR_TEMPORIZADOR_H_
 
+#include <Arduino.h>
+
 class Temporizador {
+private:
+
 public:
 	Temporizador() {
 		// TODO Auto-generated constructor stub

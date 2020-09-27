@@ -17,7 +17,7 @@
 #include "time.h"
 // - - - - - - - - - - - - - - - - - - - - - //
 #include "DataHora.h"
-
+#include "Temperatura.h"
 
 #define DHTPIN 4
 #define DHTTYPE DHT11 //Define o tipo de sensor DHT
@@ -46,17 +46,17 @@ const char* password = "mura1357";
 // Define NTP
 // For UTC +0.00 : 0 * 60 * 60 : 0
 // For UTC -3.00 : -3 * 60 * 60 : 10800
-int tz = -4,//timezone
-    utc = tz * 60 * 60;
-const char* ntpServer =  "gps.ntp.br";//"b.st1.ntp.br";
-const long  gmtOffset_sec = utc; //0;
-const int   daylightOffset_sec = 3600;
+int tz = -3;//timezone
+    // utc = tz * 60 * 60;
+const char* ntpServer = "pool.ntp.org";//"b.st1.ntp.br";//"gps.ntp.br";
+const long  gmtOffset_sec = 0;//utc;
+const int   daylightOffset_sec = tz*3600;
 
 // Define matrix keypad
 const byte ROWS = 4; //four rows
 const byte COLS = 3; //four columns
 
-boolean  sub_menu = 0;
+// boolean  sub_menu = 0;
 
 char keys[ROWS][COLS] = {
   {'1','2','3'},
@@ -65,21 +65,26 @@ char keys[ROWS][COLS] = {
   {'*','0','#'}
 };
 
-// For ESP32 Microcontroller
-byte rowPins[ROWS] = {23, 3, 19, 18}; 
+// For keypad
+byte rowPins[ROWS] = {23, 3, 19, 18};
 byte colPins[COLS] = {5, 17, 16};
-
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-String menulist[] = {"1. Data e Hora    ",
-                     "2. Idade Lote     ",
-                     "3. Temperatura    ",
-                     "4. Umidade        ",
-                     "5. Ventilacao     ",
-                     "6. Nebulizacao    ",
-                     "7. Aquecedor      ",
-                     "8. Temporizador   ",
-                     "9. Relatorio      "};
+
+
+String menulist[] = {"1. Data e Hora      ",
+                     "2. Data Alojamento  ",
+                     "3. Temperatura      ",
+                     "4. Umidade          ",
+                     "5. Ventilacao       ",
+                     "6. Nebulizacao      ",
+                     "7. Aquecedor        ",
+                     "8. Temporizador     ",
+                     "9. Relatorio        "};
+
+//Define Data Alojamento
+DataHora Alojamento, Now;
+Temperatura Temperature;
 
 char data_aloj[] = {' ',
                     ' ',
@@ -95,12 +100,9 @@ char data_aloj[] = {' ',
 
 int menu_num=0,
     indicator=0,
-	  cursor;
+	cursor;// navigations
 
-//Define Data Alojamento
-DataHora Alojamento, Now;
-struct tm timeinfo, data_alojamento, data_hoje;
-timer_t hoje, alojamento;
+
 
 // size display LCD
 int lcdColumns = 20;
@@ -116,6 +118,9 @@ void readJoystick();
 void home();
 void localTime();
 void menu_alojamento(int &i);
+void menu_temperatura();
+void menu_temperatura_ajuste();
+void menu_temperatura_max_min(char inMax[],char inMin[]);
 
 void setup() {
   Serial.begin(115200);
@@ -123,7 +128,7 @@ void setup() {
   dht.begin();
   pinMode(switchJoystick,INPUT_PULLUP); // Button Joystick
   //We create the data to be sent later using lcd.write
-  
+
   // Switch on the backlight
   lcd.createChar(0,arrow);
   lcd.createChar(1,ip);
@@ -194,12 +199,12 @@ void setup() {
   // Init and get the time NTP
   configTime(gmtOffset_sec,daylightOffset_sec, ntpServer);
   // printLocalTime(&timeinfo);
-  
-  if(!getLocalTime(&timeinfo)){
+
+  if(!getLocalTime(&Now.getData())){
     Serial.println("Failed to obtain time");
     return;
   }
-  localTime();
+  // localTime();
 
   // //disconnect WiFi as it's no longer needed
   // WiFi.disconnect(true);
@@ -207,25 +212,26 @@ void setup() {
 }
 
 void loop() {
-//  char key;// = keypad.getKey();
+//  char key = keypad.getKey();
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
     // WiFi.
     // ESP.restart();
   }
-  home();
+//  home();
 //  menu_alojamento(cursor);
+ menu_temperatura();
 
-//  Serial.printf("HOME\n- - - - - - - - - - - - - -\n");
-  delay(500);
-//  if (key=='*'){
-//    wr_menu();
-//  }
+  // delay(500);
+// if (key=='*'){
+  // menuPricipal.loopMenu(lcd, " -|MENU PRINCIPAL|- ", eixoX, eixoY, switchJoystick);
+  //  wr_menu();
+// }
 }
 
 void wait(int i){
-    // Escape timer    
+    // Escape timer
   int esc=0;
   while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000){ // && esc<=15){
     if(esc==i){
@@ -259,21 +265,16 @@ void select_menu(int index){
           lcd.print("|SAVE|");
           Serial.printf("|SAVE|");
           delay(5000);
-          lcd.clear(); 
+          lcd.clear();
         }
       }
       Serial.printf("\n1→ Return to Menu.\n");
       return;
     case 1:
-       menu_alojamento(cursor);
+      menu_alojamento(cursor);
       return;
     case 2:
-      lcd.clear();
-      while (analogRead(eixoX)>1000){
-        lcd.setCursor(0,0);
-        lcd.print("Message Case 3");
-      }
-      Serial.printf("3→ Return to Menu.");
+      menu_temperatura();
       return;
     case 3:
       lcd.clear();
@@ -322,115 +323,122 @@ void select_menu(int index){
         lcd.print("Message Case 9");
       }
       Serial.printf("9→ Return to Menu.");
-      return;  
+      return;
     default:
       break;
   }
-  
+
 }
 
-void list_menu(){
-	int i=0;
-//	if(menu_num<=3) i=0;
-	if(menu_num>3 && menu_num<=7) i+=4;
-	else if(menu_num>7) i+=8;
+//void list_menu(){
+//	int i=0;
+////	if(menu_num<=3) i=0;
+//	if(menu_num>3 && menu_num<=7) i+=4;
+//	else if(menu_num>7) i+=8;
+//
+//	lcd.setCursor(1,0); lcd.print(menulist[i]);
+//	lcd.setCursor(1,1); lcd.print(menulist[i+1]);
+//	lcd.setCursor(1,2); lcd.print(menulist[i+2]);
+//	lcd.setCursor(1,3); lcd.print(menulist[i+3]);
+//}
 
-	lcd.setCursor(1,0); lcd.print(menulist[i]);
-	lcd.setCursor(1,1); lcd.print(menulist[i+1]);
-	lcd.setCursor(1,2); lcd.print(menulist[i+2]);
-	lcd.setCursor(1,3); lcd.print(menulist[i+3]);
-}
+//void wr_menu(){
+//  lcd.clear();
+//  lcd.setCursor(0,indicator); lcd.print(">");//lcd.write(0);
+//  do{
+//    list_menu();
+//  } while(analogRead(eixoX)>1000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
+//  // } while(analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
+//
+//  readJoystick();
+//  lcd.clear();
+//}
 
-void wr_menu(){
-  lcd.clear();
-  lcd.setCursor(0,indicator); lcd.print(">");//lcd.write(0);
-  do{
-    list_menu();
-  } while(analogRead(eixoX)>1000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
-  // } while(analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
+//void readJoystick(){
+//  int size = sizeof(menulist)/sizeof(menulist[0])-1;
+//
+//  // Navigation Top
+//  if(analogRead(eixoY)<1000){
+//    Serial.printf("\n- - - - - - - - - - - - - -\n||  TOP ||\n----------\n");
+//    Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
+//    Serial.printf("Sizeof Menu: %d\n",size);
+//    Serial.printf("menu_num: %d\n- - - - - - - - - - - - - -|\n",menu_num);
+//    //Serial.printf("Menu option: %s\n",menulist[menu_num]);
+//
+//    if(menu_num>0){
+//      Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
+//      menu_num--;
+//      indicator--;
+//
+//      if(indicator==-1) indicator=3;
+//
+//      Serial.printf("Send Up Menu, menu_num: %d, indicator: %d\n",menu_num,indicator);
+//      wr_menu();
+//    }
+//    else{
+//      Serial.printf("Begin Menu!");
+//      wr_menu();
+//    }
+//  }
+//  // Navigation Bottom
+//  if(analogRead(eixoY)>3000){
+//    Serial.printf("\n- - - - - - - - - - - - - -\n||BOTTOM||\n----------\n");
+//    Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
+//    Serial.printf("Sizeof Menu: %d\n",size);
+//    Serial.printf("menu_num: %d\n- - - - - - - - -\n",menu_num);
+//    //Serial.printf("Menu option: %s\n",menulist[menu_num]);
+//
+//    if(menu_num<size){
+//      Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
+//      menu_num++;
+//      indicator++;
+//
+//      if(indicator==4) indicator=0;
+//
+//      Serial.printf("Send Down Menu, menu_num: %d, indicator: %d\n- - - - - - - - - - - - - -\n",menu_num, indicator);
+//      wr_menu();
+//    }
+//    else{
+//      Serial.printf("End Menu!");
+//      wr_menu();
+//    }
+//  }
+//  // Escape User
+//  if(analogRead(eixoX)<1000){
+//    Serial.printf("\n General Left → Break\n- - - - - - - - - - - - - -\n");
+//    Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
+//    menu_num=0;
+//    indicator=0;
+//    return;
+//  }
+//  // Select menu option
+//  // if(analogRead(eixoX)>3000){
+//  //   Serial.printf("Right → Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
+//  //   Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
+//  //   select_menu(menu_num);
+//  // }
+//  if(digitalRead(switchJoystick)==0){
+//    Serial.printf("Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
+//    Serial.printf("digitalRead switchJoystick 14: %d\n",digitalRead(switchJoystick));
+//    select_menu(menu_num);
+//  }
+//}
 
-  readJoystick();
-  lcd.clear();
-}
-
-void readJoystick(){
-  int size = sizeof(menulist)/sizeof(menulist[0])-1;
-  
-  // Navigation Top
-  if(analogRead(eixoY)<1000){    
-    Serial.printf("\n- - - - - - - - - - - - - -\n||  TOP ||\n----------\n");
-    Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
-    Serial.printf("Sizeof Menu: %d\n",size);
-    Serial.printf("menu_num: %d\n- - - - - - - - - - - - - -|\n",menu_num);
-    //Serial.printf("Menu option: %s\n",menulist[menu_num]);
-
-    if(menu_num>0){
-      Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
-      menu_num--;
-      indicator--;
-
-      if(indicator==-1) indicator=3;
-
-      Serial.printf("Send Up Menu, menu_num: %d, indicator: %d\n",menu_num,indicator);
-      wr_menu();
-    }
-    else{
-      Serial.printf("Begin Menu!");
-      wr_menu();
-    }
-  }
-  // Navigation Bottom
-  if(analogRead(eixoY)>3000){
-    Serial.printf("\n- - - - - - - - - - - - - -\n||BOTTOM||\n----------\n");
-    Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
-    Serial.printf("Sizeof Menu: %d\n",size);
-    Serial.printf("menu_num: %d\n- - - - - - - - -\n",menu_num);
-    //Serial.printf("Menu option: %s\n",menulist[menu_num]);
-    
-    if(menu_num<size){
-      Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
-      menu_num++;
-      indicator++;
-
-      if(indicator==4) indicator=0;
-      
-      Serial.printf("Send Down Menu, menu_num: %d, indicator: %d\n- - - - - - - - - - - - - -\n",menu_num, indicator);
-      wr_menu();
-    }
-    else{
-      Serial.printf("End Menu!");
-      wr_menu();
-    }
-  }
-  // Escape User
-  if(analogRead(eixoX)<1000){
-    Serial.printf("\n General Left → Break\n- - - - - - - - - - - - - -\n");
-    Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
-    menu_num=0;
-    indicator=0;
-    return;
-  }
-  // Select menu option
-  // if(analogRead(eixoX)>3000){
-  //   Serial.printf("Right → Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
-  //   Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
-  //   select_menu(menu_num);
-  // }
-  if(digitalRead(switchJoystick)==0){
-    Serial.printf("Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
-    Serial.printf("digitalRead switchJoystick 14: %d\n",digitalRead(switchJoystick));
-    select_menu(menu_num);
-  }
-}
-
-void home(){ 
+void home(){
   lcd.home();
 
   // Print ESP Local IP Address
   lcd.setCursor(0,0); //lcd.print("IP:");
   lcd.write(1);
-  lcd.setCursor(1,0); lcd.print(WiFi.localIP());
-  Serial.println(WiFi.localIP());
+  lcd.setCursor(1,0);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED){
+	  lcd.print("No connetion!       ");
+	  Serial.println("No connetion!       ");
+  }
+  else{
+	  lcd.print(WiFi.localIP());
+	  Serial.println(WiFi.localIP());
+  }
 
   // printLocalTime();
   localTime();
@@ -438,7 +446,7 @@ void home(){
   // lcd.setCursor(1,3);   lcd.print(&timeinfo, "%d/%m/%Y");
   // lcd.setCursor(12,3);  lcd.print(&timeinfo, "%R");
   // lcd.setCursor(18,3);  lcd.print("00");
-  
+
   // lcd.setCursor(0,3);
   // lcd.print("X:");
   // lcd.setCursor(2,3);
@@ -473,7 +481,7 @@ void home(){
    h = dht.readHumidity(); // Sensor readings may also be up to 2 seconds 'old'
 //  h = dht.getHumidity();
   // (its a very slow sensor)
-  
+
   // Compute heat index in Celsius (isFahreheit = false)
    hic = dht.computeHeatIndex(t, h, false);
 //  hic = dht.computeHeatIndex(values.temperature,values.humidity,false);
@@ -515,14 +523,14 @@ void home(){
     // String ch = String(cr);
     // lcd.print(ch);
     // Serial.println("Confort: "+ch);
-    
+
     //Exibe os dados no display
     //Serial.printf("%02d/%02d/%d\n%02d:%02d:%02d",
-    //    date.day, 
+    //    date.day,
     //    date.month,
-    //    date.year, 
+    //    date.year,
     //    date.hours,
-    //    date.minutes, 
+    //    date.minutes,
     //    date.seconds);
 
     Serial.println("\n");
@@ -599,8 +607,8 @@ void menu_alojamento(int &i){
 
 //	if (i>size_cursor) i=0;
 
-	lcd.setCursor(0,0);  lcd.print("|    ALOJAMENTO    |");
-	lcd.setCursor(0,2);  lcd.print("Data:");
+	lcd.setCursor(0,0);  lcd.print("   -|ALOJAMENTO|-   ");
+	lcd.setCursor(0,2);  lcd.print("DATA:");
 	lcd.setCursor(11,2); lcd.print("/");
 	lcd.setCursor(14,2); lcd.print("/");
 
@@ -650,7 +658,7 @@ void menu_alojamento(int &i){
 					Alojamento.setDia(str.substring(0,2).toInt());
 					Alojamento.setMes(str.substring(2,4).toInt());
 					Alojamento.setAno(str.substring(4,8).toInt());
-          
+
 					lcd.clear();
 					lcd.setCursor(7,1);
 					lcd.print("|SAVE|");
@@ -685,6 +693,267 @@ void menu_alojamento(int &i){
 			menu_alojamento(i);
 		} else {
 			menu_alojamento(i);
+		}
+	}
+}
+
+void menu_temperatura(){
+	// delay(500);
+  // lcd.setCursor(0,0); lcd.print("X:");
+  // lcd.setCursor(2,0); lcd.print(analogRead(eixoX));
+  // lcd.setCursor(7,0); lcd.print("I:");
+  // lcd.setCursor(9,0); lcd.print(Temperature.interator);
+  // lcd.setCursor(11,0); lcd.print("M:");
+  // lcd.setCursor(13,0); lcd.print(Temperature.modo);
+  lcd.clear();
+	lcd.setCursor(0,Temperature.interator); lcd.print(">");//lcd.write(0);
+  do{
+    int i=0;
+    lcd.setCursor(0,0); lcd.print(Temperature.title);
+    lcd.setCursor(1,1); lcd.print(Temperature.menu[i]);
+    lcd.setCursor(7,1); lcd.print(Temperature.modos[Temperature.modo]);
+    lcd.setCursor(1,2); lcd.print(Temperature.menu[i+1]);
+    lcd.setCursor(1,3); lcd.print(Temperature.menu[i+2]);
+
+  } while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
+
+  int size = sizeof(Temperature.menu)/sizeof(Temperature.menu[0]);
+  // Serial.printf("\nInterator: %d\n",Temperature.interator);
+
+  //	readJoystick();
+
+		// Navigation Top
+  if(analogRead(eixoY)<1000){
+    if(Temperature.interator>1){
+      // menu_enum--;
+      Temperature.interator--;
+
+      if(Temperature.interator==0) Temperature.interator=3;
+      menu_temperatura();
+    }
+    else{
+      Serial.printf("Begin Menu!");
+      menu_temperatura();
+    }
+  }
+
+  // Navigation Bottom
+  if(analogRead(eixoY)>3000){
+    if(Temperature.interator<size){
+      Temperature.interator++;
+      // menu_enum++;
+
+      if(Temperature.interator==4) Temperature.interator=1;
+      menu_temperatura();
+    }
+    else{
+      Serial.printf("End Menu!");
+      menu_temperatura();
+    }
+  }
+  // -=== Alternador modo ===-
+  if (Temperature.interator==1){
+    int t = Temperature.modos->length();
+    // -=== RIGTH ===-
+		if(analogRead(eixoX)>3000){
+		  Temperature.modo++;
+      if(Temperature.modo == 3) Temperature.modo = 0;
+      Serial.printf("t: %d",t);
+      Serial.printf("modo: %d",Temperature.modo);
+		}
+    // -=== LEFT ===-
+    if(analogRead(eixoX)<1000){
+			Temperature.modo--;
+      if(Temperature.modo == -1) Temperature.modo = 2;
+      Serial.printf("t: %d\n",t);
+      Serial.printf("modo: %d\n",Temperature.modo);
+		}
+  }
+
+  // -=== Selector ===-
+  if(digitalRead(switchJoystick)==0){
+    Serial.printf("Swtich Intetator: %d\n",Temperature.interator);
+    switch (Temperature.interator){
+      case 2:
+
+        break;
+      case 3:
+        // int cursor = 2;
+        Temperature.cursorMaxMin[0] = 6;
+        Temperature.cursorMaxMin[1] = 2;
+        char Ma[4];
+        char Mi[4];
+        
+        sprintf(Ma,"%.1f",Temperature.maximo);
+        Serial.printf("Max (String): %s\n",Ma);
+        Serial.printf("TMax (float): %f\n",Temperature.maximo);
+               
+        sprintf(Mi,"%.1f",Temperature.minimo);
+        Serial.printf("Min (String): %s\n",Mi);
+        Serial.printf("TMin (float): %f\n",Temperature.minimo);
+        
+        menu_temperatura_max_min(Ma, Mi);
+        break;
+
+      default:
+        break;
+    }
+  }
+
+		//End read Joystick
+
+
+	lcd.clear();
+
+}
+
+void menu_temperatura_ajuste(){}
+
+void menu_temperatura_max_min(char inMax[],char inMin[]){
+  
+  char	key;
+
+  Serial.printf("inMax: %s\n",inMax);
+  Serial.printf("inMin: %s\n",inMin);
+  // for (int i = 0; i < 3; i++){
+  //   Serial.printf("Max[%d]: %c ",i,inMax[i]);
+  //   Serial.printf("Min[%d]: %c\n",i,inMin[i]);
+  // }
+  lcd.clear();
+  lcd.setCursor(0,0); lcd.print("-|AJUSTE MAX E MIN|-");
+  lcd.setCursor(1,2); lcd.printf("Max: %c.%cC",inMax[0],inMax[2]);
+  lcd.setCursor(1,3); lcd.printf("Min: %c.%cC",inMin[0],inMin[2]);
+  do{
+    key = keypad.getKey();
+    lcd.setCursor(Temperature.cursorMaxMin[0], Temperature.cursorMaxMin[1]);
+    lcd.blink();
+    // Serial.printf("%f, %f\n", Temperature.max, Temperature.min);
+    if (key) {
+      Serial.println(key);
+			switch (key) {
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					if (Temperature.cursorMaxMin[1]==2){
+            if (Temperature.cursorMaxMin[0]==6){
+              //(6,2)
+              inMax[0]=key;
+              Serial.printf("(%d,%d) = %c\n", 
+                            Temperature.cursorMaxMin[0],
+                            Temperature.cursorMaxMin[1],
+                            inMax[0]);
+              Serial.printf("inMax: %s\n",inMax);
+              Serial.printf("inMax[0]: %c\ninMax[1]: %c\ninMax[2]: %c\n",inMax[0],inMax[1],inMax[2]);
+            }
+            else{
+              //(8,2)
+              inMax[2]=key;
+              Serial.printf("(%d,%d) = %c\n", 
+                            Temperature.cursorMaxMin[0],
+                            Temperature.cursorMaxMin[1],
+                            inMax[2]);
+              Serial.printf("inMax: %s\n",inMax);
+              Serial.printf("inMax[0]: %c\ninMax[1]: %c\ninMax[2]: %c\n",inMax[0],inMax[1],inMax[2]);
+            }
+          }
+          else{
+            if (Temperature.cursorMaxMin[0]==6){
+              //(6,3)
+              inMin[0]=key;
+              Serial.printf("(%d,%d) = %c\n", 
+                            Temperature.cursorMaxMin[0],
+                            Temperature.cursorMaxMin[1],
+                            inMin[0]);
+              Serial.printf("inMin: %s\n",inMin);
+              Serial.printf("inMin[0]: %c\ninMin[1]: %c\ninMin[2]: %c\n",inMin[0],inMin[1],inMin[2]);
+            }              
+            else{
+              //(8,3)
+              inMin[2]=key;
+              Serial.printf("(%d,%d) = %c\n", 
+                            Temperature.cursorMaxMin[0],
+                            Temperature.cursorMaxMin[1],
+                            inMin[2]);
+              Serial.printf("inMin: %s\n",inMin);
+              Serial.printf("inMin[0]: %c\ninMin[1]: %c\ninMin[2]: %c\n",inMin[0],inMin[1],inMin[2]);
+            }
+          }          
+          
+          // =key;
+					lcd.print(key);
+				  break;
+				case '*':
+					lcd.blink_off();
+					lcd.clear();
+          return;
+				  // break;
+				case '#':
+          lcd.blink_off();
+					float tma = atof(inMax),
+                tmi = atof(inMin);
+
+          Serial.printf("ftma: %f, ftmi: %f\n",tma,tmi);
+
+					Temperature.setMax(tma);
+          Temperature.setMin(tmi);
+
+          Serial.printf("TMax: %f, Tmi: %f\n",Temperature.maximo,Temperature.minimo);
+
+					lcd.clear();
+					lcd.setCursor(7,1);
+					lcd.print("|SAVE|");
+					Serial.printf("|SAVE|");
+					// Serial.printf("\nDia: %d, Mes: %d, Ano: %d\n",Alojamento.getDia(), Alojamento.getMes(), Alojamento.getAno());
+					// Serial.println("String: \n"+str);
+					delay(5000);
+					lcd.clear();
+          return;
+				  // break;
+			}
+    }
+  } while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000); //Serial.printf("modo: %d\n",Temperature.modo);
+
+  //  -===LEFT===-
+  if(analogRead(eixoX)<1000){
+		if (Temperature.cursorMaxMin[0]==8) {
+			Temperature.cursorMaxMin[0]=6;
+			menu_temperatura_max_min(inMax, inMin);
+		} else {
+			menu_temperatura_max_min(inMax, inMin);
+		}
+	}
+  //  -===RIGTH===-
+	if(analogRead(eixoX)>3000){
+		if (Temperature.cursorMaxMin[0]==6) {
+			Temperature.cursorMaxMin[0]=8;
+			menu_temperatura_max_min(inMax, inMin);
+		} else {
+			menu_temperatura_max_min(inMax, inMin);
+		}
+	}
+  //  -===TOP===-
+  if(analogRead(eixoY)<1000){
+		if (Temperature.cursorMaxMin[1]==3) {
+			Temperature.cursorMaxMin[1]=2;
+			menu_temperatura_max_min(inMax, inMin);
+		} else {
+			menu_temperatura_max_min(inMax, inMin);
+		}
+	}
+  //  -===BOTTOM===-
+	if(analogRead(eixoY)>3000){
+		if (Temperature.cursorMaxMin[1]==2) {
+			Temperature.cursorMaxMin[1]=3;
+			menu_temperatura_max_min(inMax, inMin);
+		} else {
+			menu_temperatura_max_min(inMax, inMin);
 		}
 	}
 }
