@@ -19,27 +19,29 @@ class Temperatura {
 	public:
 		short 	modo,
 		 		interator;
-		short	cursorMaxMin[2];
+		short	cursor[2];
 		float 	maximo = 2,
 				minimo = 2,
-				configTemperatura [10][2] ={{0,0},
-											{0,0},
-											{0,0},
-											{0,0},
-											{0,0},
-											{0,0},
-											{0,0},
-											{0,0},
-											{0,0},
-											{0,0}};
+				configTemperatura [12][2] ={{0,31.5},
+											{1,30.5},
+											{4,28.5},
+											{6,28},
+											{8,27.5},
+											{12,27},
+											{16,26.7},
+											{20,26.3},
+											{26,25.7},
+											{32,25.3},
+											{35,25},
+											{38,24.5}};
 
 		String 	menu[3] =   {"Modo:",
-									"Ajuste de modo",
-									"Definir Max. e Min."},
-						modos[3] =  {"Temp Desejada",
-								     "Curva de Temp",
-								     "Zona Entalpia"},
-						title = "  -|TEMPERATURA|-   ";
+					  		 "Ajuste de Temp.",
+							 "Definir Max. e Min."},
+				modos[3] =  {"Temp Desejada",
+							 "Curva de Temp",
+							 "Zona Entalpia"},
+				title = "  -|TEMPERATURA|-   ";
 
 
 		Temperatura();
