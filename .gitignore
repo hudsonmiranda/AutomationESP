@@ -6,6 +6,8 @@ include/
 temp/
 temp_lib/
 test/
+.clang_complete
 .cproject
+.gcc-flags.json
 .project
 README.md
