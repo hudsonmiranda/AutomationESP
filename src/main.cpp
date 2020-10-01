@@ -18,6 +18,7 @@
 // - - - - - - - - - - - - - - - - - - - - - //
 #include "DataHora.h"
 #include "Temperatura.h"
+#include "Umidade.h"
 
 #define DHTPIN 4
 #define DHTTYPE DHT11 //Define o tipo de sensor DHT
@@ -70,8 +71,6 @@ byte rowPins[ROWS] = {23, 3, 19, 18};
 byte colPins[COLS] = {5, 17, 16};
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-
-
 String menulist[] = {"1. Data e Hora      ",
                      "2. Data Alojamento  ",
                      "3. Temperatura      ",
@@ -85,6 +84,7 @@ String menulist[] = {"1. Data e Hora      ",
 //Define Data Alojamento
 DataHora Alojamento, Now;
 Temperatura Temperature;
+Umidade Humidity;
 
 char data_aloj[] = {' ',
                     ' ',
@@ -121,6 +121,9 @@ void menu_alojamento(int &i);
 void menu_temperatura();
 void menu_temperatura_ajuste(short i,short l, short c);
 void menu_temperatura_max_min(char inMax[],char inMin[]);
+void menu_umidade();
+void menu_umidade_desejada(short i);
+void menu_umidade_max_mix(short l, short c);
 
 void setup() {
   Serial.begin(115200);
@@ -221,7 +224,8 @@ void loop() {
   }
 //  home();
 //  menu_alojamento(cursor);
- menu_temperatura();
+//  menu_temperatura();
+    menu_umidade();
 
   // delay(500);
 // if (key=='*'){
@@ -698,13 +702,6 @@ void menu_alojamento(int &i){
 }
 
 void menu_temperatura(){
-	// delay(500);
-  // lcd.setCursor(0,0); lcd.print("X:");
-  // lcd.setCursor(2,0); lcd.print(analogRead(eixoX));
-  // lcd.setCursor(7,0); lcd.print("I:");
-  // lcd.setCursor(9,0); lcd.print(Temperature.interator);
-  // lcd.setCursor(11,0); lcd.print("M:");
-  // lcd.setCursor(13,0); lcd.print(Temperature.modo);
   lcd.clear();
 	lcd.setCursor(0,Temperature.interator); lcd.print(">");//lcd.write(0);
   do{
@@ -714,7 +711,6 @@ void menu_temperatura(){
     lcd.setCursor(7,1); lcd.print(Temperature.modos[Temperature.modo]);
     lcd.setCursor(1,2); lcd.print(Temperature.menu[i+1]);
     lcd.setCursor(1,3); lcd.print(Temperature.menu[i+2]);
-
   } while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
 
   int size = sizeof(Temperature.menu)/sizeof(Temperature.menu[0]);
@@ -784,12 +780,7 @@ void menu_temperatura(){
         Temperature.cursor[1] = 2;
         char Ma[4], Mi[4];
         sprintf(Ma,"%.1f",Temperature.maximo);
-        // Serial.printf("Max (String): %s\n",Ma);
-        // Serial.printf("TMax (float): %f\n",Temperature.maximo);
         sprintf(Mi,"%.1f",Temperature.minimo);
-        // Serial.printf("Min (String): %s\n",Mi);
-        // Serial.printf("TMin (float): %f\n",Temperature.minimo);
-        
         menu_temperatura_max_min(Ma, Mi);
         break;
       default:
@@ -809,7 +800,7 @@ void menu_temperatura_ajuste(short i,short l, short c){
   short s=0,
         ts = sizeof(Temperature.configTemperatura)/sizeof(Temperature.configTemperatura[0])-1,
         blink[] = {8,9,13,14,16};
-  
+
   if(i<=2) s=0;
 	else if(i>2 && i<=5) s+=3;
   else if(i>5 && i<=8) s+=6;
@@ -817,7 +808,7 @@ void menu_temperatura_ajuste(short i,short l, short c){
 
   lcd.clear();
   lcd.setCursor(0,0); lcd.print("-|CONF TEMPERATURA|-");
-  
+
   lcd.setCursor(1,1);  lcd.printf("P:%02u",s);
   lcd.setCursor(6,1);  lcd.printf("I:%02.f",Temperature.configTemperatura[s][0]);
   lcd.setCursor(11,1); lcd.printf("T:%04.1fC",Temperature.configTemperatura[s][1]);
@@ -845,15 +836,11 @@ void menu_temperatura_ajuste(short i,short l, short c){
           char aux_day[3],aux_temp[4];
           sprintf(aux_day,"%02.f",Temperature.configTemperatura[i][0]);
           sprintf(aux_temp,"%.1f",Temperature.configTemperatura[i][1]);
-          
           Serial.printf("aux_day (String): %s\n",aux_day);
           Serial.printf("aux_temp (String): %s\n",aux_temp);
-
           if(c<=1){
             aux_day[c]=key;
             Serial.printf("IF: aux_day (String): %s\n",aux_day);
-            // float aux[2] = {atof(aux_day),atof(aux_temp)};
-            // Serial.printf("IF: aux (float): {%f,%f}\n",aux[0],aux[1]);
             Temperature.configTemperatura[i][0] = atof(aux_day);
             Temperature.configTemperatura[i][1] = atof(aux_temp);
             Serial.printf("=> Temperature (float): {%f,%f}\n",Temperature.configTemperatura[i][0],Temperature.configTemperatura[i][1]);
@@ -863,12 +850,10 @@ void menu_temperatura_ajuste(short i,short l, short c){
             if(c==4) a = c-1;
             aux_temp[a]=key;
             Serial.printf("IF: aux_temp (String): %s\n",aux_temp);
-            // float aux[2] = {atof(aux_day),atof(aux_temp)};
-            // Serial.printf("IF: aux (float): {%f,%f}\n",aux[0],aux[1]);
             Temperature.configTemperatura[i][0] = atof(aux_day);
             Temperature.configTemperatura[i][1] = atof(aux_temp);
             Serial.printf("=> Temperature (float): {%f,%f}\n",Temperature.configTemperatura[i][0],Temperature.configTemperatura[i][1]);
-          }    
+          }
 					lcd.print(key);
 				  break;
 				case '*':
@@ -878,7 +863,7 @@ void menu_temperatura_ajuste(short i,short l, short c){
 			}
     }
   } while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000);
-  
+
   //  -===LEFT===-
   if(analogRead(eixoX)<1000){
     if(Temperature.cursor[0]>blink[0]){
@@ -891,7 +876,7 @@ void menu_temperatura_ajuste(short i,short l, short c){
       Serial.printf("l: %u c: %u i: %u ts: %u cursor[%u][%u]\n",l,c,i,ts,Temperature.cursor[0],Temperature.cursor[1]);
       menu_temperatura_ajuste(i,l,c);
     }
-    
+
   }
   //  -===RIGTH===-
 	if(analogRead(eixoX)>3000){
@@ -906,7 +891,7 @@ void menu_temperatura_ajuste(short i,short l, short c){
       Serial.printf("l: %u c: %u i: %u ts: %u cursor[%u][%u]\n",l,c,i,ts,Temperature.cursor[0],Temperature.cursor[1]);
       menu_temperatura_ajuste(i,l,c);
     }
-    
+
   }
   //  -===TOP===-
   if(analogRead(eixoY)<1000){
@@ -926,21 +911,21 @@ void menu_temperatura_ajuste(short i,short l, short c){
   }
   //  -===BOTTOM===-
 	if(analogRead(eixoY)>3000){
-    if(i<ts){
-      i++;
-      l++;
-      if(l==4) l=1;
-      Temperature.cursor[1] = l;
-      Serial.printf("l: %u c: %u i: %u ts: %u cursor[%u][%u]\n",l,c,i,ts,Temperature.cursor[0],Temperature.cursor[1]);
-      menu_temperatura_ajuste(i,l,c);
-    }
-    else{
-      Temperature.cursor[1] = l;
-      Serial.printf("l: %u c: %u i: %u ts: %u cursor[%u][%u]\n",l,c,i,ts,Temperature.cursor[0],Temperature.cursor[1]);
-      menu_temperatura_ajuste(i,l,c);
-    }
-    
-    
+        if(i<ts){
+        i++;
+        l++;
+        if(l==4) l=1;
+        Temperature.cursor[1] = l;
+        Serial.printf("l: %u c: %u i: %u ts: %u cursor[%u][%u]\n",l,c,i,ts,Temperature.cursor[0],Temperature.cursor[1]);
+        menu_temperatura_ajuste(i,l,c);
+        }
+        else{
+        Temperature.cursor[1] = l;
+        Serial.printf("l: %u c: %u i: %u ts: %u cursor[%u][%u]\n",l,c,i,ts,Temperature.cursor[0],Temperature.cursor[1]);
+        menu_temperatura_ajuste(i,l,c);
+        }
+
+
   }
 
 }
@@ -974,7 +959,7 @@ void menu_temperatura_max_min(char inMax[],char inMin[]){
             if (Temperature.cursor[0]==6){
               //(6,2)
               inMax[0]=key;
-              Serial.printf("(%d,%d) = %c\n", 
+              Serial.printf("(%d,%d) = %c\n",
                             Temperature.cursor[0],
                             Temperature.cursor[1],
                             inMax[0]);
@@ -984,7 +969,7 @@ void menu_temperatura_max_min(char inMax[],char inMin[]){
             else{
               //(8,2)
               inMax[2]=key;
-              Serial.printf("(%d,%d) = %c\n", 
+              Serial.printf("(%d,%d) = %c\n",
                             Temperature.cursor[0],
                             Temperature.cursor[1],
                             inMax[2]);
@@ -996,17 +981,17 @@ void menu_temperatura_max_min(char inMax[],char inMin[]){
             if (Temperature.cursor[0]==6){
               //(6,3)
               inMin[0]=key;
-              Serial.printf("(%d,%d) = %c\n", 
+              Serial.printf("(%d,%d) = %c\n",
                             Temperature.cursor[0],
                             Temperature.cursor[1],
                             inMin[0]);
               Serial.printf("inMin: %s\n",inMin);
               Serial.printf("inMin[0]: %c\ninMin[1]: %c\ninMin[2]: %c\n",inMin[0],inMin[1],inMin[2]);
-            }              
+            }
             else{
               //(8,3)
               inMin[2]=key;
-              Serial.printf("(%d,%d) = %c\n", 
+              Serial.printf("(%d,%d) = %c\n",
                             Temperature.cursor[0],
                             Temperature.cursor[1],
                             inMin[2]);
@@ -1014,7 +999,7 @@ void menu_temperatura_max_min(char inMax[],char inMin[]){
               Serial.printf("inMin[0]: %c\ninMin[1]: %c\ninMin[2]: %c\n",inMin[0],inMin[1],inMin[2]);
             }
           }
-          
+
 					lcd.print(key);
 				  break;
 				case '*':
@@ -1083,5 +1068,205 @@ void menu_temperatura_max_min(char inMax[],char inMin[]){
 		} else {
 			menu_temperatura_max_min(inMax, inMin);
 		}
+	}
+}
+
+void menu_umidade(){
+  // short size_menu = sizeof(Humidity.menu)/sizeof(Humidity.menu[0]);
+  lcd.clear();
+	lcd.setCursor(0,Humidity.iterator); lcd.print(">");//lcd.write(0);
+  do{
+    // int i=0;
+    lcd.setCursor(0,0); lcd.print(Humidity.title);
+    lcd.setCursor(1,2); lcd.print(Humidity.menu[0]);
+    lcd.setCursor(1,3); lcd.print(Humidity.menu[1]);
+  } while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
+
+  //  -===TOP===-
+  if(analogRead(eixoY)<1000){
+    if(Humidity.iterator>2){
+      Humidity.iterator--;
+      if(Humidity.iterator==1) Humidity.iterator=2;
+      Serial.printf("TOP IF | iterator: %u\n",Humidity.iterator);
+      menu_umidade();
+    }
+    else{
+      Serial.printf("TOP ELSE | iterator: %u\n",Humidity.iterator);
+      menu_umidade();
+    }
+  }
+  //  -===BOTTOM===-
+	if(analogRead(eixoY)>3000){
+    if(Humidity.iterator<4){
+      Humidity.iterator++;
+      if(Humidity.iterator==4) Humidity.iterator=3;
+      Serial.printf("BOTTOM IF | iterator: %u\n",Humidity.iterator);
+      menu_umidade();
+    }
+    else{
+      Serial.printf("BOTTOM ELSE | iterator: %u\n",Humidity.iterator);
+      menu_umidade();
+    }
+  }
+  // -=== Selector ===-
+  if(digitalRead(switchJoystick)==0){
+    Serial.printf("SwitchItetator: %d\n",Humidity.iterator);
+    switch (Humidity.iterator){
+      case 2:
+        menu_umidade_desejada(0);
+        break;
+      case 3:
+        menu_umidade_max_mix(6,2);
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+void menu_umidade_desejada(short i){
+  char	key;
+  short cursors[2] = {16,17};
+  lcd.clear();
+  lcd.setCursor(0,0); lcd.print("-|UMIDADE DESEJADA|-");
+  lcd.setCursor(0,2); lcd.printf("Umid. des.(Ud): %u%c",Humidity.desejada,'%');
+  do
+  {
+    lcd.setCursor(cursors[i],2);
+    lcd.blink();
+    key = keypad.getKey();
+    if(key){
+      switch (key){
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        lcd.print(key);
+        char aux[2];
+        sprintf(aux,"%d",Humidity.desejada);
+        Serial.printf("aux (String): %s\n",aux);
+        aux[i] = key;
+        Serial.printf("aux (key): %s\n",aux);
+        Humidity.desejada = atoi(aux);
+        Serial.printf("Humidity desej.: %u\n",Humidity.desejada);
+        break;
+      case '*':
+        lcd.blink_off();
+        lcd.clear();
+        return;
+      }
+    }
+  } while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000);
+
+   //  -===LEFT===-
+  if(analogRead(eixoX)<1000){
+    if(cursors[i]==17){
+      i--;
+      Serial.printf("i: %u\n",i);
+      menu_umidade_desejada(i);
+    }
+    else{
+      Serial.printf("i: %u\n",i);
+      menu_umidade_desejada(i);
+    }
+
+  }
+  //  -===RIGTH===-
+	if(analogRead(eixoX)>3000){
+    if(cursors[i]==16){
+      i++;
+      Serial.printf("i: %u\n",i);
+      menu_umidade_desejada(i);
+    }
+    else{
+      Serial.printf("i: %u\n",i);
+      menu_umidade_desejada(i);
+    }
+  }
+}
+
+void menu_umidade_max_mix(short l, short c){
+  char	key;
+  short cursors[2] = {l,c};
+  lcd.clear();
+  lcd.setCursor(0,0); lcd.print("-|UMID.  MAX E MIN|-");
+  lcd.setCursor(1,2); lcd.printf("Max: %02u%c",Humidity.maxima,'%');
+  lcd.setCursor(1,3); lcd.printf("Min: %02u%c",Humidity.minima,'%');
+  do{
+    key = keypad.getKey();
+    lcd.setCursor(cursors[0], cursors[1]); lcd.blink();
+    if (key) {
+			switch (key) {
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+          char aux[3];
+					if (c==2){  
+            sprintf(aux,"%02d",Humidity.maxima);
+            Serial.printf("aux (String): %s\n",aux);
+            aux[(l-6)] = key;
+            Serial.printf("aux (key): %s\n",aux);
+            Humidity.maxima = atoi(aux);
+            Serial.printf("Humidity max.: %u\n",Humidity.maxima);
+          }
+          else{
+            sprintf(aux,"%02d",Humidity.minima);
+            Serial.printf("aux (String): %s\n",aux);
+            aux[(l-6)] = key;
+            Serial.printf("aux (key): %s\n",aux);
+            Humidity.minima = atoi(aux);
+            Serial.printf("Humidity min.: %u\n",Humidity.minima);
+          }
+					lcd.print(key);
+				  break;
+				case '*':
+					lcd.blink_off();
+					lcd.clear();
+          return;
+				  // break;
+			}
+    }
+  } while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000); //Serial.printf("modo: %d\n",Temperature.modo);
+
+  //  -===LEFT===-
+  if(analogRead(eixoX)<1000){
+		if (cursors[0]==7) {
+			l=6;
+			menu_umidade_max_mix(l,c);
+		} else menu_umidade_max_mix(l,c);
+	}
+  //  -===RIGTH===-
+	if(analogRead(eixoX)>3000){
+		if (cursors[0]==6) {
+			l=7;
+			menu_umidade_max_mix(l,c);
+		} else menu_umidade_max_mix(l,c);
+	}
+  //  -===TOP===-
+  if(analogRead(eixoY)<1000){
+		if (cursors[1]==3) {
+			c=2;
+			menu_umidade_max_mix(l,c);
+		} else menu_umidade_max_mix(l,c);
+	}
+  //  -===BOTTOM===-
+	if(analogRead(eixoY)>3000){
+		if (cursors[1]==2) {
+			c=3;
+			menu_umidade_max_mix(l,c);
+		} else menu_umidade_max_mix(l,c);
 	}
 }
