@@ -3,6 +3,7 @@
 .settings/
 .vscode/
 include/
+ino/
 temp/
 temp_lib/
 test/

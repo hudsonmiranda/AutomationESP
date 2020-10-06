@@ -19,6 +19,7 @@
 #include "DataHora.h"
 #include "Temperatura.h"
 #include "Umidade.h"
+#include "Nebulizacao.h"
 
 #define DHTPIN 4
 #define DHTTYPE DHT11 //Define o tipo de sensor DHT
@@ -85,6 +86,7 @@ String menulist[] = {"1. Data e Hora      ",
 DataHora Alojamento, Now;
 Temperatura Temperature;
 Umidade Humidity;
+Nebulizacao Neb;
 
 char data_aloj[] = {' ',
                     ' ',
@@ -100,7 +102,7 @@ char data_aloj[] = {' ',
 
 int menu_num=0,
     indicator=0,
-	cursor;// navigations
+	  cursor;// navigations
 
 
 
@@ -124,6 +126,7 @@ void menu_temperatura_max_min(char inMax[],char inMin[]);
 void menu_umidade();
 void menu_umidade_desejada(short i);
 void menu_umidade_max_mix(short l, short c);
+void MenuNebulizacao(short i,short l, short c);
 
 void setup() {
   Serial.begin(115200);
@@ -215,7 +218,7 @@ void setup() {
 }
 
 void loop() {
-//  char key = keypad.getKey();
+  char key = keypad.getKey();
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
@@ -225,16 +228,17 @@ void loop() {
 //  home();
 //  menu_alojamento(cursor);
 //  menu_temperatura();
-    menu_umidade();
+//  menu_umidade();
+  MenuNebulizacao(1,2,0);
 
   // delay(500);
-// if (key=='*'){
-  // menuPricipal.loopMenu(lcd, " -|MENU PRINCIPAL|- ", eixoX, eixoY, switchJoystick);
-  //  wr_menu();
-// }
+  // if (key=='*'){
+  //   // menuPricipal.loopMenu(lcd, " -|MENU PRINCIPAL|- ", eixoX, eixoY, switchJoystick);
+  //   wr_menu();
+  // }
 }
 
-//void wait(int i){
+// void wait(int i){
 //    // Escape timer
 //  int esc=0;
 //  while (analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000){ // && esc<=15){
@@ -248,185 +252,185 @@ void loop() {
 //  }
 //  //Serial.printf("return HOME");
 //  //return;
-//}
+// }
 
-//void select_menu(int index){
-//  char save = keypad.getKey();
-//  Serial.printf("Index selection: %d\n- - - - - - - - - - - - - -\n",index);
-//  switch (index){
-//    case 0:
-//      lcd.clear();
-//      while (analogRead(eixoX)>1000){
-//        lcd.setCursor(0,0);
-//        lcd.print("|   DATA E HORA    |");
-//        lcd.setCursor(0,2); lcd.print(">");
-//        lcd.setCursor(1,2); lcd.print("Informe manualmente");
-//        delay(500);
-//        // if (analogRead(eixoX)>3000){
-//        if(save=='#'){
-//          lcd.clear();
-//          lcd.setCursor(7,1);
-//          lcd.print("|SAVE|");
-//          Serial.printf("|SAVE|");
-//          delay(5000);
-//          lcd.clear();
-//        }
-//      }
-//      Serial.printf("\n1→ Return to Menu.\n");
-//      return;
-//    case 1:
-//      menu_alojamento(cursor);
-//      return;
-//    case 2:
-//      menu_temperatura();
-//      return;
-//    case 3:
-//      lcd.clear();
-//      while (analogRead(eixoX)>1000){
-//        lcd.setCursor(0,0);
-//        lcd.print("Message Case 4");
-//      }
-//      Serial.printf("4→ Return to Menu.");
-//      return;
-//    case 4:
-//      lcd.clear();
-//      while (analogRead(eixoX)>1000){
-//        lcd.setCursor(0,0);
-//        lcd.print("Message Case 5");
-//      }
-//      Serial.printf("5→ Return to Menu.");
-//      return;
-//    case 5:
-//     lcd.clear();
-//      while (analogRead(eixoX)>1000){
-//        lcd.setCursor(0,0);
-//        lcd.print("Message Case 6");
-//      }
-//      Serial.printf("6→ Return to Menu.");
-//      return;
-//    case 6:
-//      lcd.clear();
-//      while (analogRead(eixoX)>1000){
-//        lcd.setCursor(0,0);
-//        lcd.print("Message Case 7");
-//      }
-//      Serial.printf("7→ Return to Menu.");
-//      return;
-//    case 7:
-//      lcd.clear();
-//      while (analogRead(eixoX)>1000){
-//        lcd.setCursor(0,0);
-//        lcd.print("Message Case 8");
-//      }
-//      Serial.printf("8→ Return to Menu.");
-//      return;
-//    case 8:
-//      lcd.clear();
-//      while (analogRead(eixoX)>1000){
-//        lcd.setCursor(0,0);
-//        lcd.print("Message Case 9");
-//      }
-//      Serial.printf("9→ Return to Menu.");
-//      return;
-//    default:
-//      break;
-//  }
-//
-//}
+void select_menu(int index){
+ char save = keypad.getKey();
+ Serial.printf("Index selection: %d\n- - - - - - - - - - - - - -\n",index);
+ switch (index){
+   case 0:
+     lcd.clear();
+     while (analogRead(eixoX)>1000){
+       lcd.setCursor(0,0);
+       lcd.print("|   DATA E HORA    |");
+       lcd.setCursor(0,2); lcd.print(">");
+       lcd.setCursor(1,2); lcd.print("Informe manualmente");
+       delay(500);
+       // if (analogRead(eixoX)>3000){
+       if(save=='#'){
+         lcd.clear();
+         lcd.setCursor(7,1);
+         lcd.print("|SAVE|");
+         Serial.printf("|SAVE|");
+         delay(5000);
+         lcd.clear();
+       }
+     }
+     Serial.printf("\n1→ Return to Menu.\n");
+     return;
+   case 1:
+     menu_alojamento(cursor);
+     return;
+   case 2:
+     menu_temperatura();
+     return;
+   case 3:
+     lcd.clear();
+     while (analogRead(eixoX)>1000){
+       lcd.setCursor(0,0);
+       lcd.print("Message Case 4");
+     }
+     Serial.printf("4→ Return to Menu.");
+     return;
+   case 4:
+     lcd.clear();
+     while (analogRead(eixoX)>1000){
+       lcd.setCursor(0,0);
+       lcd.print("Message Case 5");
+     }
+     Serial.printf("5→ Return to Menu.");
+     return;
+   case 5:
+    lcd.clear();
+     while (analogRead(eixoX)>1000){
+       lcd.setCursor(0,0);
+       lcd.print("Message Case 6");
+     }
+     Serial.printf("6→ Return to Menu.");
+     return;
+   case 6:
+     lcd.clear();
+     while (analogRead(eixoX)>1000){
+       lcd.setCursor(0,0);
+       lcd.print("Message Case 7");
+     }
+     Serial.printf("7→ Return to Menu.");
+     return;
+   case 7:
+     lcd.clear();
+     while (analogRead(eixoX)>1000){
+       lcd.setCursor(0,0);
+       lcd.print("Message Case 8");
+     }
+     Serial.printf("8→ Return to Menu.");
+     return;
+   case 8:
+     lcd.clear();
+     while (analogRead(eixoX)>1000){
+       lcd.setCursor(0,0);
+       lcd.print("Message Case 9");
+     }
+     Serial.printf("9→ Return to Menu.");
+     return;
+   default:
+     break;
+ }
 
-//void list_menu(){
-//	int i=0;
-////	if(menu_num<=3) i=0;
-//	if(menu_num>3 && menu_num<=7) i+=4;
-//	else if(menu_num>7) i+=8;
-//
-//	lcd.setCursor(1,0); lcd.print(menulist[i]);
-//	lcd.setCursor(1,1); lcd.print(menulist[i+1]);
-//	lcd.setCursor(1,2); lcd.print(menulist[i+2]);
-//	lcd.setCursor(1,3); lcd.print(menulist[i+3]);
-//}
+}
 
-//void wr_menu(){
+void list_menu(){
+	int i=0;
+//	if(menu_num<=3) i=0;
+	if(menu_num>3 && menu_num<=7) i+=4;
+	else if(menu_num>7) i+=8;
+
+	lcd.setCursor(1,0); lcd.print(menulist[i]);
+	lcd.setCursor(1,1); lcd.print(menulist[i+1]);
+	lcd.setCursor(1,2); lcd.print(menulist[i+2]);
+	lcd.setCursor(1,3); lcd.print(menulist[i+3]);
+}
+
+void wr_menu(){
 //  lcd.clear();
-//  lcd.setCursor(0,indicator); lcd.print(">");//lcd.write(0);
-//  do{
-//    list_menu();
-//  } while(analogRead(eixoX)>1000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
-//  // } while(analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
-//
-//  readJoystick();
-//  lcd.clear();
-//}
+ lcd.setCursor(0,indicator); lcd.print(">");//lcd.write(0);
+ do{
+   list_menu();
+ } while(analogRead(eixoX)>1000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
+ // } while(analogRead(eixoX)>1000 && analogRead(eixoX)<3000 && analogRead(eixoY)>1000 && analogRead(eixoY)<3000 && digitalRead(switchJoystick)!=0);
 
-//void readJoystick(){
-//  int size = sizeof(menulist)/sizeof(menulist[0])-1;
-//
-//  // Navigation Top
-//  if(analogRead(eixoY)<1000){
-//    Serial.printf("\n- - - - - - - - - - - - - -\n||  TOP ||\n----------\n");
-//    Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
-//    Serial.printf("Sizeof Menu: %d\n",size);
-//    Serial.printf("menu_num: %d\n- - - - - - - - - - - - - -|\n",menu_num);
-//    //Serial.printf("Menu option: %s\n",menulist[menu_num]);
-//
-//    if(menu_num>0){
-//      Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
-//      menu_num--;
-//      indicator--;
-//
-//      if(indicator==-1) indicator=3;
-//
-//      Serial.printf("Send Up Menu, menu_num: %d, indicator: %d\n",menu_num,indicator);
-//      wr_menu();
-//    }
-//    else{
-//      Serial.printf("Begin Menu!");
-//      wr_menu();
-//    }
-//  }
-//  // Navigation Bottom
-//  if(analogRead(eixoY)>3000){
-//    Serial.printf("\n- - - - - - - - - - - - - -\n||BOTTOM||\n----------\n");
-//    Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
-//    Serial.printf("Sizeof Menu: %d\n",size);
-//    Serial.printf("menu_num: %d\n- - - - - - - - -\n",menu_num);
-//    //Serial.printf("Menu option: %s\n",menulist[menu_num]);
-//
-//    if(menu_num<size){
-//      Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
-//      menu_num++;
-//      indicator++;
-//
-//      if(indicator==4) indicator=0;
-//
-//      Serial.printf("Send Down Menu, menu_num: %d, indicator: %d\n- - - - - - - - - - - - - -\n",menu_num, indicator);
-//      wr_menu();
-//    }
-//    else{
-//      Serial.printf("End Menu!");
-//      wr_menu();
-//    }
-//  }
-//  // Escape User
-//  if(analogRead(eixoX)<1000){
-//    Serial.printf("\n General Left → Break\n- - - - - - - - - - - - - -\n");
-//    Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
-//    menu_num=0;
-//    indicator=0;
-//    return;
-//  }
-//  // Select menu option
-//  // if(analogRead(eixoX)>3000){
-//  //   Serial.printf("Right → Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
-//  //   Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
-//  //   select_menu(menu_num);
-//  // }
-//  if(digitalRead(switchJoystick)==0){
-//    Serial.printf("Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
-//    Serial.printf("digitalRead switchJoystick 14: %d\n",digitalRead(switchJoystick));
-//    select_menu(menu_num);
-//  }
-//}
+ readJoystick();
+//  lcd.clear();
+}
+
+void readJoystick(){
+ int size = sizeof(menulist)/sizeof(menulist[0])-1;
+
+ // Navigation Top
+ if(analogRead(eixoY)<1000){
+   Serial.printf("\n- - - - - - - - - - - - - -\n||  TOP ||\n----------\n");
+   Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
+   Serial.printf("Sizeof Menu: %d\n",size);
+   Serial.printf("menu_num: %d\n- - - - - - - - - - - - - -|\n",menu_num);
+   //Serial.printf("Menu option: %s\n",menulist[menu_num]);
+
+   if(menu_num>0){
+     Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
+     menu_num--;
+     indicator--;
+
+     if(indicator==-1) indicator=3;
+
+     Serial.printf("Send Up Menu, menu_num: %d, indicator: %d\n",menu_num,indicator);
+     wr_menu();
+   }
+   else{
+     Serial.printf("Begin Menu!");
+     wr_menu();
+   }
+ }
+ // Navigation Bottom
+ if(analogRead(eixoY)>3000){
+   Serial.printf("\n- - - - - - - - - - - - - -\n||BOTTOM||\n----------\n");
+   Serial.printf("analogRead eixoY 33: %d\n",analogRead(eixoY));
+   Serial.printf("Sizeof Menu: %d\n",size);
+   Serial.printf("menu_num: %d\n- - - - - - - - -\n",menu_num);
+   //Serial.printf("Menu option: %s\n",menulist[menu_num]);
+
+   if(menu_num<size){
+     Serial.printf("menu_num is: %d, and indicator is: %d\n",menu_num, indicator);
+     menu_num++;
+     indicator++;
+
+     if(indicator==4) indicator=0;
+
+     Serial.printf("Send Down Menu, menu_num: %d, indicator: %d\n- - - - - - - - - - - - - -\n",menu_num, indicator);
+     wr_menu();
+   }
+   else{
+     Serial.printf("End Menu!");
+     wr_menu();
+   }
+ }
+ // Escape User
+ if(analogRead(eixoX)<1000){
+   Serial.printf("\n General Left → Break\n- - - - - - - - - - - - - -\n");
+   Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
+   menu_num=0;
+   indicator=0;
+   return;
+ }
+ // Select menu option
+ // if(analogRead(eixoX)>3000){
+ //   Serial.printf("Right → Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
+ //   Serial.printf("analogRead eixoX 32: %d\n",analogRead(eixoX));
+ //   select_menu(menu_num);
+ // }
+ if(digitalRead(switchJoystick)==0){
+   Serial.printf("Select option: %d\n- - - - - - - - - - - - - -\n",menu_num);
+   Serial.printf("digitalRead switchJoystick 14: %d\n",digitalRead(switchJoystick));
+   select_menu(menu_num);
+ }
+}
 
 void home(){
   lcd.home();
@@ -441,7 +445,7 @@ void home(){
   }
   else{
 	  lcd.print(WiFi.localIP());
-	  Serial.println(WiFi.localIP());
+	  // Serial.println(WiFi.localIP());
   }
 
   // printLocalTime();
@@ -504,7 +508,7 @@ void home(){
     lcd.write(2);
     lcd.setCursor(1,1);
     lcd.print((String)hic+"C");
-    Serial.println("Heat index: "+(String)hic+"C ");
+    // Serial.println("Heat index: "+(String)hic+"C ");
 
     // Serial.println(t);
     lcd.setCursor(8,1); //lcd.print("T");
@@ -512,7 +516,7 @@ void home(){
     lcd.setCursor(9,1);
     String st = String(t,1);
     lcd.print(st+"C");
-    Serial.println("Temperature: "+st+"C ");
+    // Serial.println("Temperature: "+st+"C ");
 
     // Serial.println(h);
     lcd.setCursor(15,1);
@@ -521,7 +525,7 @@ void home(){
     String sh = String(h,0);
     lcd.setCursor(19,1); lcd.print(" ");
     lcd.setCursor(16,1); lcd.print(sh+"%");
-    Serial.println("Humidity: "+sh+"%");
+    // Serial.println("Humidity: "+sh+"%");
 
     // lcd.setCursor(0,2);
     // String ch = String(cr);
@@ -586,10 +590,10 @@ void localTime(){
 
 	double idade = difftime(Now.getDataT(),Alojamento.getDataT()) / (60 * 60 * 24);;
 
-	Serial.println(&Alojamento.getData(), "%A, %B %d %Y %H:%M:%S");
-	Serial.println(&Now.getData(), "%A, %B %d %Y %H:%M:%S");
-	Serial.println((int)idade);
-	Serial.println();
+	// Serial.println(&Alojamento.getData(), "%A, %B %d %Y %H:%M:%S");
+	// Serial.println(&Now.getData(), "%A, %B %d %Y %H:%M:%S");
+	// Serial.println((int)idade);
+	// Serial.println();
 
 	// lcd.setCursor(18,3); lcd.print("0");
 	lcd.setCursor(18,3); lcd.printf("%02d",(int)idade);
@@ -1269,4 +1273,351 @@ void menu_umidade_max_mix(short l, short c){
 			menu_umidade_max_mix(l,c);
 		} else menu_umidade_max_mix(l,c);
 	}
+}
+
+void MenuNebulizacao(short page,short l, short c){
+  char	key;
+  lcd.clear();
+  lcd.setCursor(0,0); lcd.print(Neb.title);
+  lcd.setCursor(0,1); lcd.printf("Pag.%u/4",page);
+  lcd.setCursor(10,1); lcd.print("Nb1 |");lcd.setCursor(16,1); lcd.print("Nb2");
+  
+  if(page==1){
+    lcd.setCursor(0,2); lcd.printf("Temp.L - %04.1fC|%04.1fC",Neb.temp[0][0],Neb.temp[0][1]);
+    lcd.setCursor(0,3); lcd.printf("Temp.D - %04.1fC|%04.1fC",Neb.temp[1][0],Neb.temp[1][1]);
+  }
+  else if(page==2){
+    lcd.setCursor(0,2); lcd.printf("Umid.L -  %02u%c | %02u%c",Neb.umid[0][0],'%',Neb.umid[0][1],'%');
+    lcd.setCursor(0,3); lcd.printf("Umid.D -  %02u%c | %02u%c",Neb.umid[1][0],'%',Neb.umid[1][1],'%');
+  }
+  else if(page==3){
+    lcd.setCursor(0,2); lcd.printf("Time.L - %04us|%04us",Neb.time[0][0],Neb.time[0][1]);
+    lcd.setCursor(0,3); lcd.printf("Time.D - %04us|%04us",Neb.time[1][0],Neb.time[1][1]);
+  }
+  else if(page==4){
+    lcd.setCursor(0,2); lcd.printf("Grupo On - %02u |  %02u",Neb.g_on[0],Neb.g_on[1]);
+  }
+
+  do{
+    key = keypad.getKey();
+    switch (page){
+      case 1:
+        lcd.setCursor(Neb.cursorTemp[c],l); lcd.blink();
+        break;
+      case 2:
+        lcd.setCursor(Neb.cursorUmid[c],l); lcd.blink();
+        break;
+      case 3:
+        lcd.setCursor(Neb.cursorTime[c],l); lcd.blink();
+        break;
+      case 4:
+        lcd.setCursor(Neb.cursorGon[c],l); lcd.blink();
+        break;
+      
+      default:
+        break;
+    }
+
+    if (key) {
+			switch (key) {
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+          switch (page){
+            char aux[8];
+            short a;
+            case 1:
+              if(l==2){
+                if(c>=0 && c<=2){
+                  if(c==2) a=c+1; else a=c;
+                  sprintf(aux,"%04.1f",Neb.temp[0][0]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.temp[0][0] = atof(aux);
+                  Serial.printf("=> NebTemp[0][0] (float): {%f}\n",Neb.temp[0][0]);
+                }else if(c>=3 && c<=5){
+                  if(c==5) a=c-2; else a=c-3;
+                  sprintf(aux,"%04.1f",Neb.temp[0][1]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.temp[0][1] = atof(aux);
+                  Serial.printf("=> NebTemp[0][1] (float): {%f}\n",Neb.temp[0][1]);
+                }
+              }else if (l==3){
+                if(c>=0 && c<=2){
+                  if(c==2) a=c+1; else a=c;
+                  sprintf(aux,"%04.1f",Neb.temp[1][0]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.temp[1][0] = atof(aux);
+                  Serial.printf("=> NebTemp[1][0] (float): {%f}\n",Neb.temp[1][0]);
+                }else if(c>=3 && c<=5){
+                  if(c==5) a=c-2; else a=c-3;
+                  sprintf(aux,"%04.1f",Neb.temp[1][1]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.temp[1][1] = atof(aux);
+                  Serial.printf("=> NebTemp[1][1] (float): {%f}\n",Neb.temp[1][1]);
+                }
+              }
+              break;
+            case 2:
+              if(l==2){
+                if(c==0 || c==1){
+                  sprintf(aux,"%02u",Neb.umid[0][0]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[c]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.umid[0][0] = atoi(aux);
+                  Serial.printf("=> NebUmid[0][0] (short): {%u}\n",Neb.umid[0][0]);
+                }else if(c==2 || c==3){
+                  a=c-2;
+                  sprintf(aux,"%02u",Neb.umid[0][1]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.umid[0][1] = atoi(aux);
+                  Serial.printf("=> NebUmid[0][1] (short): {%u}\n",Neb.umid[0][1]);
+                }
+              }else if (l==3){
+                if(c>=0 && c<=1){
+                  sprintf(aux,"%02u",Neb.umid[1][0]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[c]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.umid[1][0] = atoi(aux);
+                  Serial.printf("=> NebUmid[1][0] (short): {%u}\n",Neb.umid[1][0]);
+                }else if(c>=2 && c<=3){
+                  a=c-2;
+                  sprintf(aux,"%02u",Neb.umid[1][1]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.umid[1][1] = atoi(aux);
+                  Serial.printf("=> NebUmid[1][1] (short): {%u}\n",Neb.umid[1][1]);
+                }
+              }
+              break;
+            case 3:
+              if(l==2){
+                if(c>=0 && c<=3){
+                  sprintf(aux,"%04u",Neb.time[0][0]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[c]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.time[0][0] = atoi(aux);
+                  Serial.printf("=> NebTime[0][0] (short): {%u}\n",Neb.time[0][0]);
+                }else if(c>=4 && c<=7){
+                  a=c-4;
+                  sprintf(aux,"%04u",Neb.time[0][1]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.time[0][1] = atoi(aux);
+                  Serial.printf("=> NebTime[0][1] (short): {%u}\n",Neb.time[0][1]);
+                }
+              }else if (l==3){
+                if(c>=0 && c<=3){
+                  sprintf(aux,"%04u",Neb.time[1][0]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[c]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.time[1][0] = atoi(aux);
+                  Serial.printf("=> NebTime[1][0] (short): {%u}\n",Neb.time[1][0]);
+                }else if(c>=4 && c<=7){
+                  a=c-4;
+                  sprintf(aux,"%04u",Neb.time[1][1]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.time[1][1] = atoi(aux);
+                  Serial.printf("=> NebTime[1][1] (short): {%u}\n",Neb.time[1][1]);
+                }
+              }
+              break;
+            case 4:
+              if(c==0 || c==1){
+                  sprintf(aux,"%02u",Neb.g_on[0]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[c]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.g_on[0] = atoi(aux);
+                  Serial.printf("=> NebG_on[0] (short): {%u}\n",Neb.g_on[0]);
+                }else if(c==2 || c==3){
+                  a=c-2;
+                  sprintf(aux,"%02u",Neb.g_on[1]);
+                  Serial.printf("aux (String): %s\n",aux);
+                  aux[a]=key;
+                  Serial.printf("aux (%ux%u): %s\n",c,l,aux);
+                  Neb.g_on[1] = atoi(aux);
+                  Serial.printf("=> NebG_on[1] (short): {%u}\n",Neb.g_on[1]);
+                }
+              break;
+            
+            default:
+              break;
+          }
+					lcd.print(key);
+				  break;
+				case '*':
+					lcd.blink_off();
+					lcd.clear();
+          return;
+				  // break;
+			}
+    }
+     
+  } while (analogRead(eixoX)>1000 && 
+           analogRead(eixoX)<3000 && 
+           analogRead(eixoY)>1000 && 
+           analogRead(eixoY)<3000 && 
+           digitalRead(switchJoystick)!=0);
+
+  
+  //  -===LEFT===-
+  if(analogRead(eixoX)<1000){
+    switch (page){
+    case 1:
+      if(Neb.cursorTemp[c]>9){
+        c--;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    case 2:
+      if(Neb.cursorUmid[c]>10){
+        c--;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    case 3:
+      if(Neb.cursorTime[c]>9){
+        c--;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    case 4:
+      if(Neb.cursorGon[c]>11){
+        c--;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    
+    default:
+      break;
+    }
+  }
+  //  -===RIGTH===-
+	if(analogRead(eixoX)>3000){
+    switch (page){
+    case 1:
+      if(Neb.cursorTemp[c]<18){
+        c++;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    case 2:
+      if(Neb.cursorUmid[c]<17){
+        c++;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    case 3:
+      if(Neb.cursorTime[c]<18){
+        c++;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    case 4:
+      if(Neb.cursorGon[c]<18){
+        c++;
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      else{
+        Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+        MenuNebulizacao(page,l,c);
+      }
+      break;
+    
+    default:
+      break;
+    }    
+  }
+  //  -===TOP===-
+  if(analogRead(eixoY)<1000){
+    if(page>=1){
+      l--;
+      if(l==1) {l=3;page--;}
+      if(page==0) {l=2;page=1;}
+      // Temperature.cursor[1] = l;
+      Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+      MenuNebulizacao(page,l,c);
+    }
+    else{
+      // Temperature.cursor[1] = l;
+      Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+      MenuNebulizacao(page,l,c);
+    }
+  }
+  //  -===BOTTOM===-
+	if(analogRead(eixoY)>3000){
+    if(page<4){
+      l++;
+      if(l==4){l=2;page++;}
+      // Temperature.cursor[1] = l;
+      Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+      MenuNebulizacao(page,l,c);
+    }
+    else{
+      // Temperature.cursor[1] = l;
+      Serial.printf("l: %u c: %u page: %u \n",l,c,page);
+      MenuNebulizacao(page,l,c);
+    }
+  }
 }
