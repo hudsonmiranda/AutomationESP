@@ -14,12 +14,15 @@
 #include <Adafruit_Sensor.h>
 // #include <NTPClient.h>
 #include <Keypad.h>
-#include "time.h"
+#include <time.h>
 // - - - - - - - - - - - - - - - - - - - - - //
-#include "DataHora.h"
-#include "Temperatura.h"
-#include "Umidade.h"
-#include "Nebulizacao.h"
+#include <DataHora.h>
+#include <Temperatura.h>
+#include <Umidade.h>
+#include <Nebulizacao.h>
+#include <Ventilacao.h>
+#include <Navegacao.h>
+#include <Aquecedor.h>
 
 #define DHTPIN 4
 #define DHTTYPE DHT11 //Define o tipo de sensor DHT
@@ -54,11 +57,17 @@ const char* ntpServer = "pool.ntp.org";//"b.st1.ntp.br";//"gps.ntp.br";
 const long  gmtOffset_sec = 0;//utc;
 const int   daylightOffset_sec = tz*3600;
 
+
+// size display LCD
+int lcdColumns = 20;
+int lcdRows = 4;
+LiquidCrystal_I2C lcd(0x3F,lcdColumns,lcdRows);
+// LiquidCrystal_I2C lcd(PCF8574A_ADDR_A21_A11_A01);
+
 // Define matrix keypad
 const byte ROWS = 4; //four rows
 const byte COLS = 3; //four columns
 
-// boolean  sub_menu = 0;
 
 char keys[ROWS][COLS] = {
   {'1','2','3'},
@@ -87,6 +96,8 @@ DataHora Alojamento, Now;
 Temperatura Temperature;
 Umidade Humidity;
 Nebulizacao Neb;
+Ventilacao Ventilation;
+Aquecedor Forno;
 
 char data_aloj[] = {' ',
                     ' ',
@@ -104,12 +115,6 @@ int menu_num=0,
     indicator=0,
 	  cursor;// navigations
 
-
-
-// size display LCD
-int lcdColumns = 20;
-int lcdRows = 4;
-LiquidCrystal_I2C lcd(0x3F,lcdColumns,lcdRows);
 
 // Define functions
 void wait(int i);
@@ -136,12 +141,14 @@ void setup() {
   //We create the data to be sent later using lcd.write
 
   // Switch on the backlight
+  // lcd.begin(lcdColumns,lcdRows);
   lcd.createChar(0,arrow);
   lcd.createChar(1,ip);
   lcd.createChar(2,he);
   lcd.createChar(3,te);
   lcd.createChar(4,hu);
 //  lcd.load_custom_character(4,hu);
+  // lcd.setCursor(0,1); lcd.write(0);
 
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
@@ -218,18 +225,20 @@ void setup() {
 }
 
 void loop() {
-  char key = keypad.getKey();
+  // char key = keypad.getKey();
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
     // WiFi.
     // ESP.restart();
   }
-//  home();
-//  menu_alojamento(cursor);
-//  menu_temperatura();
-//  menu_umidade();
-  MenuNebulizacao(1,2,0);
+  //  home();
+  //  menu_alojamento(cursor);
+  //  menu_temperatura();
+  //  menu_umidade();
+  //  MenuNebulizacao(1,2,0);
+  // Ventilation.MenuVentilation(lcd);
+  Forno.MenuAquecedor(lcd);
 
   // delay(500);
   // if (key=='*'){
@@ -657,7 +666,7 @@ void menu_alojamento(int &i){
 //		        	Serial.printf("Tecla(char): %c, Tecla(int): %d, Data[%d] = %c\n",save,save,i,data_aloj[i]);
 				  break;
 				case '*':
-					lcd.cursor_off();
+					lcd.noCursor(); //cursor_off();
 					i=0;
 					lcd.clear();
 				  break;
@@ -670,7 +679,7 @@ void menu_alojamento(int &i){
 					lcd.clear();
 					lcd.setCursor(7,1);
 					lcd.print("|SAVE|");
-					lcd.cursor_off();
+					lcd.noCursor(); //cursor_off();
 					Serial.printf("|SAVE|");
 					Serial.printf("\nDia: %d, Mes: %d, Ano: %d\n",Alojamento.getDia(), Alojamento.getMes(), Alojamento.getAno());
 					// Serial.println("String: \n"+str);
@@ -861,7 +870,7 @@ void menu_temperatura_ajuste(short i,short l, short c){
 					lcd.print(key);
 				  break;
 				case '*':
-					lcd.blink_off();
+					lcd.noCursor(); //blink_off();
 					lcd.clear();
           return;
 			}
@@ -1007,12 +1016,12 @@ void menu_temperatura_max_min(char inMax[],char inMin[]){
 					lcd.print(key);
 				  break;
 				case '*':
-					lcd.blink_off();
+					lcd.noCursor(); //blink_off();
 					lcd.clear();
           return;
 				  // break;
 				case '#':
-          lcd.blink_off();
+          lcd.noCursor(); //blink_off();
 					float tma = atof(inMax),
                 tmi = atof(inMin);
 
@@ -1161,7 +1170,7 @@ void menu_umidade_desejada(short i){
         Serial.printf("Humidity desej.: %u\n",Humidity.desejada);
         break;
       case '*':
-        lcd.blink_off();
+        lcd.noCursor(); //blink_off();
         lcd.clear();
         return;
       }
@@ -1237,7 +1246,7 @@ void menu_umidade_max_mix(short l, short c){
 					lcd.print(key);
 				  break;
 				case '*':
-					lcd.blink_off();
+					lcd.noCursor(); //blink_off();
 					lcd.clear();
           return;
 				  // break;
@@ -1471,7 +1480,7 @@ void MenuNebulizacao(short page,short l, short c){
 					lcd.print(key);
 				  break;
 				case '*':
-					lcd.blink_off();
+					lcd.noCursor(); //blink_off();
 					lcd.clear();
           return;
 				  // break;
