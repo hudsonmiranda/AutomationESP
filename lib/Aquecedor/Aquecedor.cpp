@@ -20,12 +20,12 @@ void Aquecedor::MenuAquecedor(LiquidCrystal_I2C lcd) {
 	lcd.setCursor(0,1); lcd.print("     |  LIG  |  DES");
 	switch (page){
 		case 1:
-			lcd.setCursor(0,2); lcd.printf(" A1%u | %04.1fC | %04.1fC",(page),temp[0][0],temp[0][1]);
-			lcd.setCursor(0,3); lcd.printf(" A1%u | %04.1fC | %04.1fC",(page+1),temp[1][0],temp[1][1]);
+			lcd.setCursor(0,2); lcd.printf(" AQ%u | %04.1fC | %04.1fC",(page),temp[0][0],temp[0][1]);
+			lcd.setCursor(0,3); lcd.printf(" AQ%u | %04.1fC | %04.1fC",(page+1),temp[1][0],temp[1][1]);
 			break;
 		case 2:
-			lcd.setCursor(0,2); lcd.printf(" A2%u | %04us | %04us",(page-1),time[0][0],time[0][1]);
-			lcd.setCursor(0,3); lcd.printf(" A2%u | %04us | %04us",(page),time[1][0],time[1][1]);
+			lcd.setCursor(0,2); lcd.printf(" AQ%u | %04us | %04us",(page-1),time[0][0],time[0][1]);
+			lcd.setCursor(0,3); lcd.printf(" AQ%u | %04us | %04us",(page),time[1][0],time[1][1]);
 			break;
 	}
 	do {
@@ -131,7 +131,6 @@ void Aquecedor::NavEixoX(short cr[]) {
 		}
 	}
 }
-
 
 template <class T>
 void Aquecedor::GravaAq(T table[2][2]) {

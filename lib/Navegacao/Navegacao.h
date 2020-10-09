@@ -44,6 +44,8 @@ public:
 //		this->lcd.backlight(); // Enable or Turn On the backlight
 	}
 	virtual ~Navegacao();
+	void NavEixoY(short sc);
+	void Escape();
 };
 
 #endif /* NAVEGACAO_H_ */
